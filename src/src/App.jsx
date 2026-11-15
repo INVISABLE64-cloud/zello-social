@@ -1,3 +1,4 @@
+
 async function handleAuth(e) {
   e.preventDefault();
   setBusy(true);
@@ -13,7 +14,7 @@ async function handleAuth(e) {
         throw new Error("Username must contain at least 3 valid characters.");
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -25,6 +26,19 @@ async function handleAuth(e) {
       });
 
       if (error) throw error;
+
+      if (data.user && data.session) {
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .upsert({
+            id: data.user.id,
+            username: cleanUsername,
+            display_name: displayName.trim() || cleanUsername,
+            bio: ""
+          });
+
+        if (profileError) throw profileError;
+      }
 
       setNotice(
         "Account created! Check your email to verify your account before signing in."
